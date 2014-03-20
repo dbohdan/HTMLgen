@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # COPYRIGHT (C) 1997  ROBIN FRIEDRICH
 # Permission to  use, copy, modify, and distribute this software and its
 # documentation  for  any  purpose  and  without fee  is hereby granted,
@@ -24,7 +23,7 @@ from HTMLgen import SimpleDocument, TableLite, TD, TR, Font, Name, H, Center, Hr
 from types import IntType
 from calendar import day_name, month_name, mdays, weekday
 
-__version__ = '$Id: HTMLcalendar.py,v 1.1 1998/03/19 18:44:52 friedric Exp $'
+__version__ = '$Id: HTMLcalendar.py,v 1.2 1999/02/24 04:31:03 friedric Exp $'
 __author__ = 'Robin Friedrich'
 __date__ = '10/13/97'
 
@@ -212,12 +211,12 @@ def makeint(value):
             return value
         else:
             raise TypeError, ('cannot convert to int', value)
-import regex
-datepat = regex.compile('^ *\([0-9*][0-9]?\)[/-]' #first 2 char date field
+import re
+datepat = re.compile('^ *\([0-9*][0-9]?\)[/-]' #first 2 char date field
                         '\([0-9][0-9]?\)[/-]?'    #second 2 char date field
                         '\([12][0-9][0-9][0-9]\)?[ \t]*:') #optional year field
-daypat  = regex.compile('^ *\('+string.join(day_name,'\|')+'\)')
-timepat = regex.compile('\([0-9][0-9]?\):\([0-9][0-9]\)')
+daypat  = re.compile('^ *\('+string.join(day_name,'\|')+'\)')
+timepat = re.compile('\([0-9][0-9]?\):\([0-9][0-9]\)')
 
 def read_appt_file(filename):
     """Parsing function.
@@ -227,7 +226,7 @@ def read_appt_file(filename):
 
     Example:
     
-        2/15/97:   3:25  Text for the appointment
+        2/15/1997: 3:25  Text for the appointment (year must be 4 digit)
                    4:45  This will be placed on the same day
         5/21:      8:00  Leaving off the year will pick up the current year
         */15:      2:00  This will place the appt on the 15th of every month

@@ -1,8 +1,8 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 """Test script which generates the online documentation for HTMLgen.
 """
-import string, regex, regsub, os, time, glob
+import string, re, os, time, glob
 from HTMLcolors import *
 from HTMLgen import *
 import HTMLgen  #only so I can pick off the __version__
@@ -232,11 +232,11 @@ def sample1(filename, aft=None, fore=None, top=None, home=None):
     doc.email = 'jefferson@montecello.virginia.gov'
     doc.logo = ('../image/eagle21.gif', 64, 54)
     # parse Declaration of Independence
-    re_hline = regex.compile('^--+$')
-    re_title = regex.compile('^Title:\(.*$\)')
+    re_hline = re.compile('^--+$')
+    re_title = re.compile('^Title:\(.*$\)')
     font2 = Font(size='+2')
     s = open(os.path.join(datadir, 'DoI.txt')).read()
-    paragraphs = regsub.split(s, '\n\([\t ]*\n\)+')
+    paragraphs = re.split(s, '\n\([\t ]*\n\)+')
     for para in paragraphs:
         if not para: continue
         if re_title.search(para) > -1:
@@ -263,7 +263,7 @@ def sample2(filename, aft=None, fore=None, top=None, home=None):
     #Ok parse that file
     f = open(mpath(os.path.join(datadir, 'parrot.txt')))
     line = f.readline()
-    re_dialog = regex.compile('\(^[OC].*:\)\(.*\)')
+    re_dialog = re.compile('\(^[OC].*:\)\(.*\)')
     while line:
         if re_dialog.search(line) > -1:
             role, prose = re_dialog.group(1,2)

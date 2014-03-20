@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """This module provides utility functions/classes associated with HTMLgen.
 
 This is functionality use by HTMLgen script writers rather than by HTMLgen
@@ -19,7 +18,7 @@ itself. (i.e. HTMLgen.py is not dependant on this module.)
 # OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 # PERFORMANCE OF THIS SOFTWARE.
 __version__ = '$Id: HTMLutil.py,v 1.3 1998/05/28 20:14:52 friedric Exp $'
-import string, regex, os
+import string, re, os
 import HTMLgen, HTMLcolors
 from types import *
 
@@ -79,7 +78,7 @@ def been_marked(text):
     """Determine if the text have been marked by a previous gsub.
     (ugly hack but it works)
     """
-    if regex.search('\(</?FONT\)\|\(</?STRONG\)', text) > -1:
+    if re.search('\(</?FONT\)\|\(</?STRONG\)', text) > -1:
         return 1
     else: 
         return 0
@@ -125,13 +124,13 @@ def global_substitute(search_func, repl_func, s):
 not_backslash = "[^\\\\]"
 triple_single = "'''"
 triple_double = '"""'
-_doc_start_re = regex.compile(
+_doc_start_re = re.compile(
     "\(^\|" + not_backslash + "\)" # bol or not backslash
     + "\(" + triple_single + "\|" + triple_double + "\)" )
 single_re = not_backslash + triple_single
 double_re = not_backslash + triple_double
-_triple_re = { triple_single : regex.compile(single_re),
-               triple_double : regex.compile(double_re) }
+_triple_re = { triple_single : re.compile(single_re),
+               triple_double : re.compile(double_re) }
 
 del not_backslash, triple_single, triple_double, \
     single_re, double_re
@@ -150,13 +149,13 @@ def find_docstring( s, begin=0):
         return (None, None)
     return startquote, quotefinder.regs[0][1]
 
-string_re = regex.compile('\(\(\'[^\'\n]*\'\)\|\("[^"\n]"\)\)')
+string_re = re.compile('\(\(\'[^\'\n]*\'\)\|\("[^"\n]"\)\)')
 def find_string_literal( s, begin=0 ):
     if string_re.search(s, begin) > -1:
         return string_re.regs[1]
     return (None, None)
 
-comment_re = regex.compile('#.*$')
+comment_re = re.compile('#.*$')
 def find_comment( s, begin=0 ):
     while comment_re.search(s, begin) > -1:
         if been_marked(comment_re.group(0)):
@@ -166,13 +165,13 @@ def find_comment( s, begin=0 ):
     return (None, None)
 
 Name = '[a-zA-Z_][a-zA-Z0-9_]*'
-func_re = regex.compile('\(^[ \t]*def[ \t]+' +Name+ '\)[ \t]*(') 
+func_re = re.compile('\(^[ \t]*def[ \t]+' +Name+ '\)[ \t]*(') 
 def find_function( s, begin=0 ):
     if func_re.search(s, begin) > -1:
         return func_re.regs[1]
     return (None, None)
 
-class_re = regex.compile('\(^[ \t]*class[ \t]+' +Name+ '\)[ \t]*[(:]')
+class_re = re.compile('\(^[ \t]*class[ \t]+' +Name+ '\)[ \t]*[(:]')
 def find_class( s, begin=0 ):
     if class_re.search(s, begin) > -1:
         return class_re.regs[1]

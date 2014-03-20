@@ -1,6 +1,6 @@
 #
 # The Python Imaging Library.
-# $Id: ImageH.py,v 1.3 1998/05/28 20:14:52 friedric Exp $
+# $Id: ImageH.py,v 1.3 1998/05/28 20:14:52 friedric Exp friedric $
 #
 # the Image class wrapper
 #
@@ -46,11 +46,16 @@ import ImagePaletteH
 import os, string
 
 # type stuff
-from types import IntType, StringType, TupleType
+from types import IntType, StringType, TupleType, ListType, FloatType, LongType
 isStringType = lambda t: type(t) == StringType
 isTupleType  = lambda t: type(t) == TupleType
 isImageType  = lambda t: hasattr(t, "im")
-from operator import isNumberType, isSequenceType
+#from operator import isNumberType, isSequenceType # not in JPython 1.0.3
+def isNumberType(t):
+    type(t) in (IntType, FloatType, LongType)
+    
+def isSequenceType(t):
+    type(t) in (TupleType, ListType, StringType)
 
 #
 # Debug level

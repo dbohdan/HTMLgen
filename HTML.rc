@@ -2,7 +2,7 @@
 from HTMLcolors import *
 
 stylesheet = 'HTMLgen.css'
-author = '1996-8 Robin Friedrich'
+author = '1996-9 Robin Friedrich'
 email = 'friedrich@pythonpros.com'
 bgcolor = WHITE
 textcolor = BLACK
@@ -15,4 +15,5 @@ prev = ('../image/back.gif', 66, 22)
 next = ('../image/next.gif', 66, 22)
 top = ('../image/top.gif', 66, 22)
 home = ('../image/home.gif', 66, 22)
+gohome = None
 background = '../image/bg-dots.gif'

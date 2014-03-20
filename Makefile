@@ -2,17 +2,17 @@
 # Makefile for HTMLgen (requires gnu make)
 #
 
-VERSION = 2_1_1
+VERSION = 2_2
 
 PACKAGE = HTMLgen
 
 DOCS=        README Makefile ChangeLog HTML.rc HTMLgen.rc appt.txt 
 
 MODULES=     HTMLgen.py HTMLcolors.py HTMLutil.py HTMLcalendar.py \
-		barchart.py colorcube.py imgsize.py
+		barchart.py colorcube.py imgsize.py NavLinks.py Formtools.py
 
 MODULESC=    HTMLgen.pyc HTMLcolors.pyc HTMLutil.pyc HTMLcalendar.pyc \
-		barchart.pyc colorcube.pyc imgsize.pyc
+		barchart.pyc colorcube.pyc imgsize.pyc NavLinks.pyc Formtools.pyc
 
 PIL=	     ImageH.py ImageFileH.py ImagePaletteH.py \
 		GifImagePluginH.py JpegImagePluginH.py PngImagePluginH.py
@@ -20,7 +20,7 @@ PIL=	     ImageH.py ImageFileH.py ImagePaletteH.py \
 PILC=	     ImageH.pyc ImageFileH.pyc ImagePaletteH.pyc \
 		GifImagePluginH.pyc JpegImagePluginH.pyc PngImagePluginH.pyc
 
-EXTRAS=	     StickyForm.py cgiapp.py installp.py imgfix.py
+EXTRAS=	     StickyForm.py cgiapp.py installp.py imgfix.py 
 
 SUBDIRS=     image html data
 
@@ -60,6 +60,16 @@ compileall:
 
 install: compileall
 	python installp.py -f $(MODULES) $(MODULESC) $(PIL) $(PILC)
+	@echo Installation of $(PACKAGE) done.
+
+debinstall:
+	if [ -z "$(PYLIBDIR)" ]; then \
+	  echo "Unset PYLIBDIR."; \
+	  exit 1; \
+	fi; \
+	for f in $(MODULES) $(PIL); do \
+	  install -m 644 $$f $(PYLIBDIR)/; \
+	done
 	@echo Installation of $(PACKAGE) done.
 
 checkin:

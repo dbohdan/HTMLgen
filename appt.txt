@@ -20,7 +20,8 @@
 12/4:    1:00    Give trip summary at manager's meeting
 
 */1:    2:00 Project Status Mtg.
-4/3/97:        4:00 Dr. Appointment
+
+4/3/1997:        4:00 Dr. Appointment
 
 6/11:   8:00  Tagup with Boeing
         9:30  Tagup with NASA

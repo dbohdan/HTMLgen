@@ -1,0 +1,28 @@
+Source: htmlgen
+Section: python
+Priority: optional
+Maintainer: Kevin Coyner <kcoyner@debian.org>
+Build-Depends: debhelper (>= 5.0.37.2)
+Build-Depends-Indep: python-support (>= 0.3), python-all-dev (>= 2.3.5-11)
+XS-Python-Version: all
+Standards-Version: 3.7.2
+
+Package: python-htmlgen
+Architecture: all
+Depends: ${python:Depends}
+Provides: ${python:Provides}
+Replaces: htmlgen (<< 2.2.2-8.2), python2.3-htmlgen (<< 2.2.2-11), python2.4-htmlgen (<< 2.2.2-11)
+Conflicts: htmlgen (<< 2.2.2-8.2), python2.3-htmlgen (<< 2.2.2-11), python2.4-htmlgen (<< 2.2.2-11)
+Recommends: python-imaging
+Description: Python library for the generation of HTML
+ HTMLgen is a class library for the generation of HTML documents with
+ Python scripts. It's used when you want to create HTML pages
+ containing information which changes from time to time. For example
+ you might want to have a page which provides an overall system summary
+ of data collected nightly. Or maybe you have a catalog of data and
+ images that you would like formed into a spiffy set of web pages for
+ the world to browse. Python is a great scripting language for these
+ tasks and with HTMLgen it's very straightforward to construct objects
+ which are rendered into consistently structured web pages. Of course,
+ CGI scripts written in Python can take advantage of these classes as
+ well.

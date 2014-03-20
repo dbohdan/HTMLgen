@@ -16,60 +16,32 @@
 
 <h3>ABOUT THIS RELEASE</h3>
       
-      <P>This is the 2.1 release. It's a minor release with a new
-      class called TemplateDocument and several bug fixes. The
-      TemplateDocument class provides a simple way of generating web
-      pages based on a template containing tags which are replaced at
-      run time with text of your choice. It uses a dictionary to
-      provide the substitution mapping. This class is only available
-      with Python 1.5 or newer as it makes use of the re module and
-      the new get method on dictionaries. The rest of HTMLgen should
-      work fine with 1.4.
-
-      <P>A new utility module <strong>imgsize</strong> provides a
-      function to quickly compute the width and height of image
-      files. It makes use of a small subset of Fredrik Lundh's
-      excellent PIL package to support GIF, JPEG, and PNG file format
-      headers. If you have PIL installed at your site, that copy is
-      used automatically instead of the modules bundled with
-      HTMLgen. The Image object in HTMLgen makes use of this new
-      capability to automatically compute the images size properties
-      if the files exist when HTMLgen is running. Another utility
-      script is bundled with HTMLgen called
-      <strong>imgfix.py</strong>. It makes use of the imgsize routine
-      to scan HTML files looking for IMG tags without correct
-      height/width properties and fixes them. See imgfix.py source for
-      instructions on its use.
-
-      <P>The simple HTML tag classes all now inherit from AbstractTag
-      or AbstractTagSingle. The former base class provides generic
-      support for HTML element attributes and container functions such
-      as append, prepend, copy, and a new method called markup. The
-      markup method is available to scan through the text contained in
-      the object with a regular expression you furnish and perform a
-      string substitution on the matching text. The method accesses
-      two external functions - one written to support syntax of the
-      regex module and the other to support syntax and objects from
-      the new <em>re</em> module. For example, once you have a Para
-      object "P" you could substitute all bracketed text with a bold
-      font as follows:
+      <P>This is a minor release with a new module called NavLinks.py
+      and several bug fixes and modifications to allow HTMLgen to be
+      used with <a
+      href="http://www.python.org/jpython/">JPython</a>. <B>Note: This
+      version of HTMLgen REQUIRES Python 1.5 or later.</B>
       
-<PRE>
-p = Para('some text...')
-strong = Strong()
-p.markup( "(\[[^]]*\])", strong, regex_type="re" )
-</PRE> 
-    
-    <P>Note that the regular expression pattern or object given to
-    this method <em>must</em> have a group defined. It treats group 1
-    as the target of the substitution. The above also demonstrates a
-    new feature supplied by the AbstractTag class. Instances now can
-    be used a functions through use of it's __call__ method. So you
-    can now configure an HTMLgen class instance with all attributes
-    set and then reuse the instance as a text markup function.
+      <P>The NavLinks module provides tools by which a series of HTML 
+      documents can be annotated with navigation links which page the
+      user through the files. Several styles of navigation aids are
+      included and new ones can be easily derived from the class
+      framework. 
+      
+      <P>The TemplateDocument scheme has been rewritten with the
+      addition of a new base class StringTemplate with
+      TemplateDocument and new classes AutoTemplateDocument and
+      AutoStringTemplate inheriting from it. The TemplateDocument
+      class provides a simple way of generating web pages based on a
+      template containing tags which are replaced at run time with
+      text of your choice. It uses a dictionary to provide the
+      substitution mapping. This class is only available with Python
+      1.5 or newer as it makes use of the re module and the new get
+      method on dictionaries. 
+
 
       <P>The release can be <a
-      href="http://starship.skyport.net/crew/friedrich/HTMLgen.tgz">downloaded</a>
+      href="http://starship.python.net/crew/friedrich/HTMLgen.tgz">downloaded</a>
       from the Starship Web site.
       
 

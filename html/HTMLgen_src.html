@@ -3,13 +3,13 @@
 
 <!-- This file generated using Python HTMLgen module. -->
 <HEAD>
-  <META NAME="GENERATOR" CONTENT="HTMLgen 2.1.1">
+  <META NAME="GENERATOR" CONTENT="HTMLgen 2.2.2">
         <TITLE>HTMLgen.py</TITLE>
 </HEAD>
 <BODY BGCOLOR="#FFFFFF">
-<PRE>#<FONT color="#009900">'$Id: HTMLgen.py,v 2.3 1998/11/22 00:21:05 friedric Exp friedric $'</FONT>
+<PRE>#<FONT color="#009900">'$Id: HTMLgen.py,v 2.5 1999/04/20 03:29:14 friedric Exp friedric $'</FONT>
 
-<FONT color="#DD0000"># COPYRIGHT (C) 1996, 1997, 1998  ROBIN FRIEDRICH  email:Robin.Friedrich@pdq.net</FONT>
+<FONT color="#DD0000"># COPYRIGHT (C) 1996-9  ROBIN FRIEDRICH  email:Robin.Friedrich@pdq.net</FONT>
 <FONT color="#DD0000"># Permission to use, copy, modify, and distribute this software and</FONT>
 <FONT color="#DD0000"># its documentation for any purpose and without fee is hereby granted,</FONT>
 <FONT color="#DD0000"># provided that the above copyright notice appear in all copies and</FONT>
@@ -27,10 +27,10 @@
 
 Each HTML tag type has a supporting class which is responsible for
 emitting itself as valid HTML formatted text. An attempt is made to
-provide classes for newer HTML 3.2 and proposed tag elements.  An
-excellent reference for HTML tag elements can be found at
-[Sandia National Labs].  Also, I used the HTML book by Musciano and
-Kennedy from [O'Reilly] (2nd. Ed.) as the definitive reference.
+provide classes for newer HTML 3.2 and proposed tag elements.  The
+definitive reference for HTML tag elements can be found at
+[W3C].  Also, I used the HTML book by Musciano and
+Kennedy from [O Reilly] (2nd. Ed.) as the guiding reference.
 
 The Document classes are container objects which act as a focal point
 to populate all the contents of a particular web page. It also can
@@ -47,17 +47,17 @@ TableLite().  In support of this there are new tag classes TD, TH, TR
 and Caption.  These class instances can be assembled in any way to
 populate the TableLite container object. 
 
-.. [Sandia National Labs] http://www.sandia.gov/sci_compute/elements.html
-.. [O'Reilly] http://www.oreilly.com/catalog/html2/index.html
+.. [W3C] http://www.W3.org/TR/REC-html32.html
+.. [O Reilly] http://www.oreilly.com/catalog/html3/index.html
 .. [Yale Web Style Manual] http://info.med.yale.edu/caim/manual/contents.html
 """</FONT>
 
-import string, regex, regsub, time, os
+import string, re, time, os
 import UserList, copy
 from imgsize import imgsize
 
 __author__ = <FONT color="#009900">'Robin Friedrich   friedrich@pythonpros.com'</FONT>
-__version__ = <FONT color="#009900">'2.1.1'</FONT>
+__version__ = <FONT color="#009900">'2.2.2'</FONT>
 
 StringType = type(<FONT color="#009900">'s'</FONT>)
 IntType    = type(3)
@@ -481,9 +481,12 @@ PRINTECHO = 1
         <FONT color="#0000DD">"""Generate the standard footer markups.
         """</FONT>
         <FONT color="#DD0000"># FOOTER SECTION - overload this if you don't like mine.</FONT>
-        self.datetime = time.ctime(time.time()) + self.zone
-        self.date = regsub.sub(<FONT color="#009900">'[0-9]+:[0-9]+:[0-9]+ '</FONT>, <FONT color="#009900">''</FONT>,
-                               time.ctime(time.time()))
+        t = time.localtime(time.time())
+        <FONT color="#DD0000">#self.datetime = time.strftime("%c %Z", t)    #not available in JPython</FONT>
+        self.datetime = time.asctime(t)
+        <FONT color="#DD0000">#self.date = time.strftime("%A %B %d, %Y", t)</FONT>
+        x = string.split(self.datetime)
+        self.date = x[0] + <FONT color="#009900">' '</FONT> + x[1] + <FONT color="#009900">' '</FONT> + x[2] + <FONT color="#009900">', '</FONT> + x[4]
         s =  [<FONT color="#009900">'\n&lt;P&gt;&lt;HR&gt;\n'</FONT>]
         if self.place_nav_buttons:
             s.append(self.nav_buttons())
@@ -499,12 +502,8 @@ PRINTECHO = 1
 Document = SeriesDocument
 MinimalDocument = SimpleDocument
 
-try:
-    import re
-except ImportError:
-    pass
 
-<STRONG>class TemplateDocument</STRONG>:
+<STRONG>class StringTemplate</STRONG>:
     <FONT color="#0000DD">"""Generate documents based on a template and a substitution mapping.
 
     Must use Python 1.5 or newer. Uses re and the get method on dictionaries.
@@ -531,22 +530,34 @@ except ImportError:
     used as the delimiters instead of { } braces. They must be of the same
     length; for example [<FONT color="#009900">'##+'</FONT>, <FONT color="#009900">'##'</FONT>] is invalid.
     """</FONT>
-<FONT color="#CC6600">    def __init__</FONT>(self, templatefile, substitutions={}, delimiters=[<FONT color="#009900">"{"</FONT>,<FONT color="#009900">"}"</FONT>] ):
-        if len(delimiters) != 2:
+<FONT color="#CC6600">    def __init__</FONT>(self, template, substitutions=None, **kw):
+        self.delimiters = [<FONT color="#009900">'{'</FONT>, <FONT color="#009900">'}'</FONT>]
+        self.__dict__.update(kw)
+        if len(self.delimiters) != 2:
             raise ValueError("delimiter argument must be a pair of strings")
-        self.delimiter_width = len(delimiters[0])
-        delimiters = map(re.escape, delimiters)
+        self.delimiter_width = len(self.delimiters[0])
+        delimiters = map(re.escape, self.delimiters)
         self.subpatstr = delimiters[0] + "[\w_]+" + delimiters[1]
         self.subpat = re.compile(self.subpatstr)
-        self.substitutions = substitutions
-        f = open(mpath(templatefile))
-        self.source = f.read()
-        f.close()
+        self.substitutions = substitutions or {}
+        self.set_template(template)
+
+<FONT color="#CC6600">    def set_template</FONT>(self, template):
+        self.source = template
+    
+<FONT color="#CC6600">    def keys</FONT>(self):
+        return self.substitutions.keys()
+
+<FONT color="#CC6600">    def __setitem__</FONT>(self, name, value):
+        self.substitutions[name] = value
+        
+<FONT color="#CC6600">    def __getitem__</FONT>(self, name):
+        return self.substitutions[name]
       
 <FONT color="#CC6600">    def __str__</FONT>(self):
-        return self.sub(self.source)
+        return self._sub(self.source)
 
-<FONT color="#CC6600">    def sub</FONT>(self, source, subs=None):
+<FONT color="#CC6600">    def _sub</FONT>(self, source, subs=None):
         <FONT color="#0000DD">"""Perform source text substitutions.
 
         *source* string containing template source text
@@ -561,7 +572,8 @@ except ImportError:
             a, b = matched.span()
             output.append(source[i:i+a])
             <FONT color="#DD0000"># using the new get method for dicts in 1.5</FONT>
-            output.append(str(substitutions.get(source[i+a+dw:i+b-dw], source[i+a:i+b])))
+            output.append(str(substitutions.get(
+                   source[i+a+dw:i+b-dw], source[i+a:i+b])))
             i = i + b
             matched = self.subpat.search(source[i:])
         else:
@@ -595,6 +607,200 @@ except ImportError:
             import sys
             sys.stdout.write(str(self))
 
+<STRONG>class TemplateDocument</STRONG>(StringTemplate):
+    <FONT color="#0000DD">"""Generate documents based on a template and a substitution mapping.
+
+    Must use Python 1.5 or newer. Uses re and the get method on dictionaries.
+
+    Usage:
+       T = TemplateDocument(<FONT color="#009900">'Xfile'</FONT>)
+       T.substitutions = {<FONT color="#009900">'month'</FONT>: ObjectY, <FONT color="#009900">'town'</FONT>: <FONT color="#009900">'Scarborough'</FONT>}
+       T.write(<FONT color="#009900">'Maine.html'</FONT>)
+
+    A dictionary, or object that behaves like a dictionary, is assigned to the
+    *substitutions* attribute which has symbols as keys to objects. Upon every
+    occurance of these symbols surrounded by braces {} in the source template,
+    the corresponding value is converted to a string and substituted in the output.
+
+    For example, source text which looks like:
+     I lost my heart at {town} Fair.
+    becomes:
+     I lost my heart at Scarborough Fair.
+
+    Symbols in braces which do not correspond to a key in the dictionary remain
+    unchanged.
+
+    An optional third argument to the class is a list or two strings to be
+    used as the delimiters instead of { } braces. They must be of the same
+    length; for example [<FONT color="#009900">'##+'</FONT>, <FONT color="#009900">'##'</FONT>] is invalid.
+    """</FONT>
+<FONT color="#CC6600">    def set_template</FONT>(self, template):
+        f = open(mpath(template))
+        self.source = f.read()
+        f.close()
+
+<STRONG>class AutoStringTemplate</STRONG>(StringTemplate):
+    marker_begin = <FONT color="#009900">'&lt;!--{%s}Begin--&gt;'</FONT>
+    marker_end   = <FONT color="#009900">'&lt;!--{%s}End--&gt;'</FONT>
+    R = re.compile(r"<!--{(?P<key>[\w_]+)}Begin-->(?P<text>.*?)<!--{\1}End-->", re.S)
+    
+<FONT color="#CC6600">    def set_template</FONT>(self, template):
+        <FONT color="#0000DD">"""Set template string and normalize by extracting comment tokens.
+        """</FONT>
+        self.source = template
+        self.extract_template()
+        
+<FONT color="#CC6600">    def extract_template</FONT>(self, source=None):
+        <FONT color="#0000DD">"""Convert comment-marked regions to a regular {tokens}.
+        
+        Updates the substitution dictionary with the text from the region.
+        """</FONT>
+        source = source or self.source
+        a = 0
+        newsubs = {}
+        newtemplate = []
+        d1, d2 = self.delimiters
+        while 1:
+            m = self.R.search(source, a)
+            if m:
+                start, end = m.span()
+                newtemplate.append(source[a:start])
+                a = end
+                newsubs[m.group(<FONT color="#009900">'key'</FONT>)] = m.group(<FONT color="#009900">'text'</FONT>)
+                newtemplate.append(d1+m.group(<FONT color="#009900">'key'</FONT>)+d2)
+            else:
+                newtemplate.append(source[a:])
+                break
+        self.source = string.join(newtemplate, <FONT color="#009900">''</FONT>)
+        self.substitutions.update(newsubs)
+
+<FONT color="#CC6600">    def _sub</FONT>(self, source, subs=None):
+        <FONT color="#0000DD">"""Perform source text substitutions.
+
+        *source* string containing template source text
+        *subs* mapping of symbols to replacement values
+        """</FONT>
+        substitutions = subs or self.substitutions
+        dw = self.delimiter_width
+        i = 0
+        output = []
+        matched = self.subpat.search(source[i:])
+        while matched:
+            a, b = matched.span()
+            output.append(source[i:i+a])
+            <FONT color="#DD0000">#implant comments to mark the location of the tokens</FONT>
+            output.append(self.marker_begin % source[i+a+dw:i+b-dw])
+            <FONT color="#DD0000"># using the new get method for dicts in 1.5</FONT>
+            output.append(str(substitutions.get(
+                   source[i+a+dw:i+b-dw], source[i+a:i+b])))
+            output.append(self.marker_end % source[i+a+dw:i+b-dw])
+            i = i + b
+            matched = self.subpat.search(source[i:])
+        else:
+            output.append(source[i:])
+        return string.join(output, <FONT color="#009900">''</FONT>)
+
+<STRONG>class AutoTemplateDocument</STRONG>(AutoStringTemplate):
+    <FONT color="#0000DD">"""Generate documents based on a template and a substitution mapping.
+    
+    The primary difference between AutoTemplateDocument and TemplateDocument
+    is that the Auto version can read through an HTML file previously
+    generated with this class and identify the regions of text that were
+    substituted. It then extracts that text into the substitution dictionary
+    and can then be updated. The intent is to eliminate the need to 
+    maintain separate content files for insertion into templates. The HTML
+    output file can double as a template for future use.
+    Output from this class have their filled regions marked by comments:
+        ...gets <!--{wz}Begin-->glued,<!--{wz}End--> in place...
+    Which came from ...gets {wz} in place... in old style template syntax.
+    
+    AutoTemplateDocument is a functional superset of TemplateDocument and should
+    be compatible.
+
+    Usage:
+       T = AutoTemplateDocument(<FONT color="#009900">'Maine.html'</FONT>)
+       T.substitutions = {<FONT color="#009900">'month'</FONT>: ObjectY, <FONT color="#009900">'town'</FONT>: <FONT color="#009900">'Scarborough'</FONT>}
+       or
+       T[<FONT color="#009900">'month'</FONT>] = ObjectY ; T[<FONT color="#009900">'town'</FONT>] = <FONT color="#009900">'Scarborough'</FONT>
+       T.write(<FONT color="#009900">'Maine.html'</FONT>)
+    
+    A dictionary, or object that behaves like a dictionary, is assigned to the
+    *substitutions* attribute which has symbols as keys to objects. Upon every
+    occurance of these symbols surrounded by braces {} in the source template,
+    the corresponding value is converted to a string and substituted in the output.
+
+    For example, source text which looks like:
+     I lost my heart at {town} Fair.
+    becomes:
+     I lost my heart at Scarborough Fair.
+
+    Symbols in braces which do not correspond to a key in the dictionary remain
+    unchanged.
+
+    An optional third argument to the class is a list or two strings to be
+    used as the delimiters instead of { } braces. They must be of the same
+    length; for example [<FONT color="#009900">'##+'</FONT>, <FONT color="#009900">'##'</FONT>] is invalid.
+    """</FONT>
+<FONT color="#CC6600">    def set_template</FONT>(self, template):
+        f = open(mpath(template))
+        self.source = f.read()
+        f.close()
+
+
+<STRONG>class Container</STRONG>:
+    <FONT color="#0000DD">"""A holder for a list of HTMLgen objects.    
+    """</FONT>
+
+<FONT color="#CC6600">    def __init__</FONT>(self, *args, **kw):
+        self.contents = list(args)
+        for name, value in kw.items():
+            setattr(self, name, value)
+
+<FONT color="#CC6600">    def __str__</FONT>(self):
+        bodystring = <FONT color="#009900">'%s\n'</FONT> * len(self.contents)
+        return bodystring % tuple(self.contents)
+
+<FONT color="#CC6600">    def __add__</FONT>(self, other):
+        new = self.__class__()
+        new.contents = self.contents + other.contents
+        return new
+        
+<FONT color="#CC6600">    def append_file</FONT>(self, filename, marker_function = None):
+        <FONT color="#0000DD">"""Add the contents of a file to the document.
+
+        filename -- the filename of the file to be read [string]
+        marker_function -- a callable object which the text read from
+          the file will be passed through before being added to the
+          document.
+        """</FONT>
+        f = open(mpath(filename), <FONT color="#009900">'r'</FONT>)
+        if marker_function:
+            self.append(marker_function(f.read()))
+        else:
+            self.append(f.read())
+        f.close()
+        
+<FONT color="#CC6600">    def append</FONT>(self, *items):
+        <FONT color="#0000DD">"""Add content to the Document object.
+        
+        Arg *items* can be plain text or objects; multiple arguments supported.
+        """</FONT>
+        for item in items:
+            self.contents.append(item)
+
+<FONT color="#CC6600">    def prepend</FONT>(self, *items):
+        <FONT color="#0000DD">"""Add content to the beginning of the Document object.
+        
+        Arg *items* can be plain text or objects; multiple arguments supported.
+        """</FONT>
+        li = len(items)
+        for i in range(li-1, 0, -1):
+            self.contents.insert(0, items[i])
+
+<FONT color="#CC6600">    def copy</FONT>(self):
+        <FONT color="#0000DD">"""Return a complete copy of the current Container object.
+        """</FONT>
+        return copy.deepcopy(self)
 
 <FONT color="#DD0000">#===================</FONT>
         
@@ -995,7 +1201,6 @@ DL = DefinitionList
 
 
 <FONT color="#DD0000">####### FORM TAGS ########</FONT>
-
 <STRONG>class Form</STRONG>:
     <FONT color="#0000DD">"""Define a user filled form. Uses POST method.
    
@@ -1006,11 +1211,10 @@ DL = DefinitionList
     
         name -- name of the form
         submit -- The Input object to be used as the submit button.
-                  If None (default) a Submit button will automatically
+                  If none specified a Submit button will automatically
                   be appended to the form. Do not manually append your
                   submit button. HTMLgen will append it for you.
-        reset  -- flag indicating if a Reset button should automatically
-                  be appended to the form.
+        reset  -- Input object to be used as a reset button.
         target -- set a TARGET attribute
         enctype -- specify an Encoding type.
         onSubmit -- script, which is executed, when the form is submitted
@@ -1018,32 +1222,21 @@ DL = DefinitionList
 <FONT color="#CC6600">    def __init__</FONT>(self, cgi = None, **kw):
         self.contents = []
         self.cgi = cgi
-        self.submit = None
+        self.submit = Input(type=<FONT color="#009900">'submit'</FONT>, name=<FONT color="#009900">'SubmitButton'</FONT>, value=<FONT color="#009900">'Send'</FONT>)
         self.reset = None
         self.target = None
         self.enctype = None
         self.name = None
         self.onSubmit = <FONT color="#009900">''</FONT>
-        for item in kw.keys():
-            if self.__dict__.has_key(item):
-                self.__dict__[item] = kw[item]
-            else:
-                raise KeyError, `item`+<FONT color="#009900">' not a valid parameter of the Form class.'</FONT>
+        overlay_values(self, kw)
 
 <FONT color="#CC6600">    def append</FONT>(self, *items):
         <FONT color="#0000DD">"""Append any number of items to the form container.
         """</FONT>
         for item in items:
-            self.contents.append(item)
+            self.contents.append(str(item))
 
 <FONT color="#CC6600">    def __str__</FONT>(self):
-        if not self.submit:
-            self.contents.append(Input(type=<FONT color="#009900">'submit'</FONT>, name=<FONT color="#009900">'SubmitButton'</FONT>,value=<FONT color="#009900">'Send'</FONT>))
-        else:
-            self.contents.append(self.submit)
-        if self.reset:
-            self.contents.append(self.reset)
-
         s = [<FONT color="#009900">'\n&lt;FORM METHOD="POST"'</FONT>]
         if self.cgi: s.append(<FONT color="#009900">' ACTION="%s"'</FONT> % self.cgi)
         if self.enctype: s.append(<FONT color="#009900">' ENCTYPE="%s"'</FONT> % self.enctype)
@@ -1051,10 +1244,24 @@ DL = DefinitionList
         if self.name: s.append(<FONT color="#009900">' NAME="%s"'</FONT> % self.name)
         if self.onSubmit: s.append(<FONT color="#009900">' onSubmit="%s"'</FONT> % self.onSubmit)
         s.append(<FONT color="#009900">'&gt;\n'</FONT>)
-        for item in self.contents:
-            s.append(str(item))
+        s = s + self.contents
+        s.append(str(self.submit))
+        if self.reset: s.append(str(self.reset))
         s.append(<FONT color="#009900">'\n&lt;/FORM&gt;\n'</FONT>)
         return string.join(s, <FONT color="#009900">''</FONT>)
+        
+        
+<FONT color="#CC6600">def overlay_values</FONT>(obj, dict):
+    <FONT color="#0000DD">"""Adds each item from dict to the given object iff there already
+    exists such a key. Raises KeyError if you try to update the value
+    of non-existing keys.
+    """</FONT>
+    for key in dict.keys():
+        if hasattr(obj, key):
+            obj.__dict__[key] = dict[key]
+        else:
+            raise KeyError(`key` + <FONT color="#009900">' not a keyword for '</FONT> + obj.__class__.__name__)
+
 
 <STRONG>class Input</STRONG>:
     <FONT color="#0000DD">"""General Form Input tags.
@@ -1083,8 +1290,8 @@ DL = DefinitionList
         onSelect -- script, which is executed, when part of the field 
                     is selected, useful for the text-type
     """</FONT>
-    re_type = regex.compile(<FONT color="#009900">'text\|password\|checkbox\|radio\|image\|button\|file\|submit\|reset\|hidden'</FONT>,
-                            regex.casefold)
+    re_type = re.compile(<FONT color="#009900">'text|password|checkbox|radio|image|button|file|submit|reset|hidden'</FONT>,
+                            re.IGNORECASE)
 <FONT color="#CC6600">    def __init__</FONT>(self, **kw):
         self.type = <FONT color="#009900">'TEXT'</FONT>
         self.name = <FONT color="#009900">'Default_Name'</FONT>
@@ -1106,7 +1313,7 @@ DL = DefinitionList
                 self.__dict__[item] = kw[item]
             else:
                 raise KeyError, `item`+<FONT color="#009900">' not a valid parameter of the Input class.'</FONT>
-        if Input.re_type.search(self.type) < 0:
+        if Input.re_type.search(self.type) is None:
             raise KeyError, `self.type`+<FONT color="#009900">' not a valid type of Input class.'</FONT>
 
 <FONT color="#CC6600">    def __str__</FONT>(self):
@@ -1359,7 +1566,7 @@ DL = DefinitionList
                 if type(self.body[i][j]) == StringType:
                     <FONT color="#DD0000">#process cell contents to insert breaks for \n char.</FONT>
                     if self.cell_line_breaks:
-                        self.body[i][j] = regsub.gsub(<FONT color="#009900">'\n'</FONT>,<FONT color="#009900">'&lt;br&gt;'</FONT>, self.body[i][j])
+                        self.body[i][j] = string.replace(self.body[i][j], <FONT color="#009900">'\n'</FONT>,<FONT color="#009900">'&lt;br&gt;'</FONT>)
                     else:
                         self.body[i][j] = Text(self.body[i][j])
 
@@ -1706,8 +1913,8 @@ IMG = Image <FONT color="#DD0000"># alias</FONT>
         return copy.deepcopy(self)
 
 <FONT color="#CC6600">    def markup</FONT>(self, rex=None, marker=None, **kw):
-        <FONT color="#0000DD">"""Markup the contained text with a given regex with
-        a given tag class instance or function.
+        <FONT color="#0000DD">"""Markup the contained text matching a regular expression with
+        a tag class instance or function. 
 
         Arguments
 
@@ -1722,27 +1929,20 @@ IMG = Image <FONT color="#DD0000"># alias</FONT>
         
             collapse -- When set to 1 removes the non-grouped matching text
                 from the output. Default 0.
-            reg_type -- Either <FONT color="#009900">'regex'</FONT> or <FONT color="#009900">'re'</FONT> to specify which regular expression
-                module to use. Defaults to <FONT color="#009900">'regex'</FONT>.
 
         Returns the number of matching text groups.
         """</FONT>
         collapse = 0
-        reg_type = <FONT color="#009900">'regex'</FONT>
         if kw.has_key(<FONT color="#009900">'collapse'</FONT>): collapse = kw[<FONT color="#009900">'collapse'</FONT>]
-        if kw.has_key(<FONT color="#009900">'reg_type'</FONT>): reg_type = kw[<FONT color="#009900">'reg_type'</FONT>]
         text = string.join(map(str, self.contents))
-        if reg_type == <FONT color="#009900">'re'</FONT>:
-            newtext, count = markup_re(text, rex, marker, collapse)
-        elif reg_type == <FONT color="#009900">'regex'</FONT>:
-            newtext, count = markup_regex(text, rex, marker, collapse)
+        newtext, count = markup_re(text, rex, marker, collapse)
         if count:
             self.contents = [newtext]
             self.html_escape = <FONT color="#009900">'OFF'</FONT>
         return count
 
 
-<STRONG>class Area</STRONG>(AbstractTag):
+<STRONG>class Area</STRONG>(AbstractTagSingle):
     <FONT color="#0000DD">"""Specify a click-sensitive area of an image.
 
     The area is linked to a HREF specified by the *href* attribute.
@@ -2188,88 +2388,18 @@ Typewriter = TT
         return self.__str__()
 
 <FONT color="#DD0000">###### UTILITIES USED INTERNALLY ########</FONT>
-try:
-    <FONT color="#DD0000">#test for new feature in 1.5+</FONT>
-    from string import replace
-<FONT color="#CC6600">    def escape</FONT>(text):
-        <FONT color="#0000DD">"""Converts the special characters <FONT color="#009900">'&lt;'</FONT>, <FONT color="#009900">'&gt;'</FONT>, and <FONT color="#009900">'&amp;'</FONT>.
 
-        RFC 1866 specifies that these characters be represented
-        in HTML as &lt; &gt; and &amp; respectively. In Python
-        1.5 we use the new string.replace() function for speed.
-        """</FONT>
-        <FONT color="#DD0000"># New in 1.5 (~3 times faster)</FONT>
-        text = replace(text, <FONT color="#009900">'&amp;'</FONT>, <FONT color="#009900">'&amp;amp;'</FONT>) # must be done 1st
-        text = replace(text, <FONT color="#009900">'&lt;'</FONT>, <FONT color="#009900">'&amp;lt;'</FONT>)
-        text = replace(text, <FONT color="#009900">'&gt;'</FONT>, <FONT color="#009900">'&amp;gt;'</FONT>)
-        return text
-    
-except ImportError:
-<FONT color="#CC6600">    def escape</FONT>(text):
-        <FONT color="#0000DD">"""Converts the special characters <FONT color="#009900">'&lt;'</FONT>, <FONT color="#009900">'&gt;'</FONT>, and <FONT color="#009900">'&amp;'</FONT>.
+<FONT color="#CC6600">def escape</FONT>(text, replace=string.replace):
+    <FONT color="#0000DD">"""Converts the special characters <FONT color="#009900">'&lt;'</FONT>, <FONT color="#009900">'&gt;'</FONT>, and <FONT color="#009900">'&amp;'</FONT>.
 
-        RFC 1866 specifies that these characters be represented
-        in HTML as &lt; &gt; and &amp; respectively.
-        """</FONT>
-        <FONT color="#DD0000"># Using this join/split technique is faster than regsub</FONT>
-        <FONT color="#DD0000"># for strings with few occurances. Otherwise it's a wash.</FONT>
-        <FONT color="#DD0000"># Old technique for 1.4-  </FONT>
-        split = string.split
-        join  = string.join
-        text = join(split(text, <FONT color="#009900">'&amp;'</FONT>), <FONT color="#009900">'&amp;amp;'</FONT>) # must be done 1st
-        text = join(split(text, <FONT color="#009900">'&lt;'</FONT>), <FONT color="#009900">'&amp;lt;'</FONT>)
-        text = join(split(text, <FONT color="#009900">'&gt;'</FONT>), <FONT color="#009900">'&amp;gt;'</FONT>)
-        return text
-
-<FONT color="#CC6600">def markup_regex</FONT>(text, rex=None, marker=None, collapse=0):
-    <FONT color="#0000DD">"""Markup the contained text with a given regex with
-    a given tag class instance. Uses regex module.
-
-    Arguments
-
-        text -- string to act on
-        rex -- a regular expression object or pattern which will be used
-            to match all text patterns in the Paragraph body. Must have a single
-            group defined. Group 1 is the matching text that will be marked.
-            Default to all parenthetical text.
-        marker -- an HTMLgen class instance (or any function) to which the found text will
-            be sent for wrapping (using its __call__ method). Default is Emphasis.
-            Can be your function as well.
-        collapse -- Optional flag. When set to 1 removes the non-
-            grouped matching text from the output. Default 0.
-
-    Returns the marked text and the number of matching text groups.
+    RFC 1866 specifies that these characters be represented
+    in HTML as &lt; &gt; and &amp; respectively. In Python
+    1.5 we use the new string.replace() function for speed.
     """</FONT>
-    if rex is None: rex = regex.compile(<FONT color="#009900">'(\([^)]*\))'</FONT>)
-    if marker is None: marker = Emphasis()
-    if type(rex) == StringType: rex = regex.compile(rex)
-    endpoints = []
-    output = []
-    i = 0
-    count = 0
-    while 1:
-        # build up a list of tuples: ( <FONT color="#009900">'u'</FONT>|<FONT color="#009900">'m'</FONT>, begin, end ) 
-        # <FONT color="#009900">'u'</FONT> indicates unmarked text and <FONT color="#009900">'m'</FONT> marked text
-        <FONT color="#DD0000"># begin and end is the range of characters</FONT>
-        if rex.search(text, i) > -1:
-            if collapse: <FONT color="#DD0000">#skip chars outside group1</FONT>
-                endpoints.append( (<FONT color="#009900">'u'</FONT>, i, rex.regs[0][0]) )
-                i = rex.regs[0][1]
-            else: <FONT color="#DD0000">#incl chars outside group1</FONT>
-                endpoints.append( (<FONT color="#009900">'u'</FONT>, i, rex.regs[1][0]) )
-                i = rex.regs[1][1]
-            endpoints.append( (<FONT color="#009900">'m'</FONT>, rex.regs[1][0], rex.regs[1][1]) ) #text2Bmarked
-            count = count + 1
-        else:
-            endpoints.append( (<FONT color="#009900">'u'</FONT>, i, len(text) ) ) # tack on an ending slice
-            break
-    if count == 0: return text, 0  <FONT color="#DD0000"># didn't find any matches</FONT>
-    for (style, begin, end) in endpoints:
-        if style == <FONT color="#009900">'m'</FONT>:
-            output.append(marker(text[begin:end]))
-        else:
-            output.append(text[begin:end])
-    return string.join(output, <FONT color="#009900">''</FONT>), count
+    text = replace(text, <FONT color="#009900">'&amp;'</FONT>, <FONT color="#009900">'&amp;amp;'</FONT>) # must be done 1st
+    text = replace(text, <FONT color="#009900">'&lt;'</FONT>, <FONT color="#009900">'&amp;lt;'</FONT>)
+    text = replace(text, <FONT color="#009900">'&gt;'</FONT>, <FONT color="#009900">'&amp;gt;'</FONT>)
+    return text
 
 <FONT color="#CC6600">def markup_re</FONT>(text, rex=None, marker=None, collapse=0):
     <FONT color="#0000DD">"""Markup the contained text with a given re pattern/object with
@@ -2290,11 +2420,6 @@ except ImportError:
 
     Returns tuple pair of the marked text and the number of matching text groups.
     """</FONT>
-    try:
-        import re
-    except ImportError:
-        print <FONT color="#009900">'Module "re" unavailable.'</FONT>
-        return text, 0
     if rex is None: rex = re.compile(<FONT color="#009900">'\(([^)]*)\)'</FONT>)
     if marker is None: marker = Emphasis()
     if type(rex) == StringType: rex = re.compile(rex)
@@ -2340,18 +2465,15 @@ except ImportError:
     be altered individually after instantiation. The __str__ method
     simply reassembles the components into a full URL string.
     """</FONT>
-    pattern = regex.compile(<FONT color="#009900">'^\([a-z]+\)://\([^/ ]*\)\([^ ]*\)$'</FONT>,regex.casefold)
-<FONT color="#CC6600">    def __init__</FONT>(self, url=<FONT color="#009900">''</FONT>):
-        self.proto = <FONT color="#009900">''</FONT>
-        self.node = <FONT color="#009900">''</FONT>
-        self.dir = <FONT color="#009900">''</FONT>
-        self.file = <FONT color="#009900">''</FONT>
-        if not url: return
-        if self.pattern.search(url) > -1:
-            self.proto, self.node, path = self.pattern.group(1,2,3)
-            self.dir, self.file = self.split(path)
-        else:
-            print <FONT color="#009900">'Invalid URL: '</FONT>+ url
+<FONT color="#CC6600">    def __init__</FONT>(self, url):
+        self.url = url
+        self.parse(url)
+<FONT color="#CC6600">    def parse</FONT>(self, url):
+        import urlparse
+        self.unparse = urlparse.urlunparse
+        self.proto, self.node, self.path, self.params, self.query, self.fragment = \
+                    urlparse(url)
+        self.dir, self.file = self.split(self.path)
 
 <FONT color="#CC6600">    def split</FONT>(self, p):
         <FONT color="#0000DD">"""Same as posixpath.split()
@@ -2366,7 +2488,11 @@ except ImportError:
         return head, tail
 
 <FONT color="#CC6600">    def __str__</FONT>(self):
-        return <FONT color="#009900">'%s://%s%s/%s'</FONT> % (self.proto, self.node, self.dir, self.file)
+        return self.unparse( (self.proto,
+                              self.node,
+                              self.dir+self.file,
+                              self.params,
+                              self.query, self.fragment) )
 
 <FONT color="#CC6600">    def copy</FONT>(self):
         <FONT color="#0000DD">"""No argument. Return a copy of this object.

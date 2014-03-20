@@ -3,7 +3,7 @@
 """
 import sys, os, string, shutil, getopt
 
-__version__ = '$Id: installp.py,v 1.1 1998/05/28 19:53:30 friedric Exp friedric $'
+__version__ = '$Id: installp.py,v 1.2 1999/02/04 04:57:34 friedric Exp $'
 
 def main():
     FORCE = 0

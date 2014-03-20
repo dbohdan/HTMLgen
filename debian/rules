@@ -1,0 +1,49 @@
+#! /usr/bin/make -f
+# Made with the aid of debmake, by Christoph Lameter,
+# based on the sample debian/rules file for GNU hello by Ian Jackson.
+
+exe_scripts = HTMLcalendar.py HTMLutil.py barchart.py colorcube.py
+
+PYVERS := $(shell pyversions -r)
+
+build:
+	dh_testdir
+	chmod -x *H.py
+	touch build
+
+clean:
+	dh_testdir
+	-rm -f build
+	-find . -name '*.py[co]' | xargs rm -f
+	dh_clean
+
+binary-indep: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+	set -e; \
+	for py in $(PYVERS); do                  \
+	    mkdir -p debian/python-htmlgen/usr/lib/$$py/site-packages/HTMLgen;     \
+	    $(MAKE) debinstall                   \
+	        PYLIBDIR=debian/python-htmlgen/usr/lib/$$py/site-packages/HTMLgen; \
+	    install -m 644 debian/HTMLgen.pth    \
+	        debian/python-htmlgen/usr/lib/$$py/site-packages/; \
+	done
+	dh_installdocs -A README HTML.rc HTMLgen.rc appt.txt
+	dh_installdocs -ppython-htmlgen data html image
+	dh_installexamples -A -ppython-htmlgen HTMLtest.py StickyForm.py
+	dh_installchangelogs ChangeLog
+	dh_fixperms
+	dh_pysupport
+	dh_compress -X.py -X.jpg
+	dh_installdeb
+	dh_gencontrol
+	dh_installexamples
+	dh_md5sums
+	dh_builddeb
+
+binary-arch: build
+
+binary:	binary-indep binary-arch
+.PHONY: binary binary-indep clean

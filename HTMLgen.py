@@ -1,6 +1,6 @@
-#'$Id: HTMLgen.py,v 2.3 1998/11/22 00:21:05 friedric Exp friedric $'
+#'$Id: HTMLgen.py,v 2.5 1999/04/20 03:29:14 friedric Exp friedric $'
 
-# COPYRIGHT (C) 1996, 1997, 1998  ROBIN FRIEDRICH  email:Robin.Friedrich@pdq.net
+# COPYRIGHT (C) 1996-9  ROBIN FRIEDRICH  email:Robin.Friedrich@pdq.net
 # Permission to use, copy, modify, and distribute this software and
 # its documentation for any purpose and without fee is hereby granted,
 # provided that the above copyright notice appear in all copies and
@@ -18,10 +18,10 @@
 
 Each HTML tag type has a supporting class which is responsible for
 emitting itself as valid HTML formatted text. An attempt is made to
-provide classes for newer HTML 3.2 and proposed tag elements.  An
-excellent reference for HTML tag elements can be found at
-[Sandia National Labs].  Also, I used the HTML book by Musciano and
-Kennedy from [O'Reilly] (2nd. Ed.) as the definitive reference.
+provide classes for newer HTML 3.2 and proposed tag elements.  The
+definitive reference for HTML tag elements can be found at
+[W3C].  Also, I used the HTML book by Musciano and
+Kennedy from [O Reilly] (2nd. Ed.) as the guiding reference.
 
 The Document classes are container objects which act as a focal point
 to populate all the contents of a particular web page. It also can
@@ -38,17 +38,17 @@ TableLite().  In support of this there are new tag classes TD, TH, TR
 and Caption.  These class instances can be assembled in any way to
 populate the TableLite container object. 
 
-.. [Sandia National Labs] http://www.sandia.gov/sci_compute/elements.html
-.. [O'Reilly] http://www.oreilly.com/catalog/html2/index.html
+.. [W3C] http://www.W3.org/TR/REC-html32.html
+.. [O Reilly] http://www.oreilly.com/catalog/html3/index.html
 .. [Yale Web Style Manual] http://info.med.yale.edu/caim/manual/contents.html
 """
 
-import string, regex, regsub, time, os
+import string, re, time, os
 import UserList, copy
 from imgsize import imgsize
 
 __author__ = 'Robin Friedrich   friedrich@pythonpros.com'
-__version__ = '2.1.1'
+__version__ = '2.2.2'
 
 StringType = type('s')
 IntType    = type(3)
@@ -284,7 +284,7 @@ class SimpleDocument(BasicDocument):
         if self.meta: s.append(str(self.meta))
         if self.base: s.append(str(self.base))
         if self.stylesheet:
-            s.append('\n <LINK rel=stylesheet href="%s" type=text/css title="%s">\n' \
+            s.append('\n <LINK rel=stylesheet href="%s" type="text/css" title="%s">\n' \
                      % (self.stylesheet, self.stylesheet))
         if self.style:
             s.append('\n<STYLE>\n<!--\n%s\n-->\n</style>\n' % self.style)
@@ -472,9 +472,12 @@ class SeriesDocument(SimpleDocument):
         """Generate the standard footer markups.
         """
         # FOOTER SECTION - overload this if you don't like mine.
-        self.datetime = time.ctime(time.time()) + self.zone
-        self.date = regsub.sub('[0-9]+:[0-9]+:[0-9]+ ', '',
-                               time.ctime(time.time()))
+        t = time.localtime(time.time())
+        #self.datetime = time.strftime("%c %Z", t)    #not available in JPython
+        self.datetime = time.asctime(t)
+        #self.date = time.strftime("%A %B %d, %Y", t)
+        x = string.split(self.datetime)
+        self.date = x[0] + ' ' + x[1] + ' ' + x[2] + ', ' + x[4]
         s =  ['\n<P><HR>\n']
         if self.place_nav_buttons:
             s.append(self.nav_buttons())
@@ -490,12 +493,8 @@ class SeriesDocument(SimpleDocument):
 Document = SeriesDocument
 MinimalDocument = SimpleDocument
 
-try:
-    import re
-except ImportError:
-    pass
 
-class TemplateDocument:
+class StringTemplate:
     """Generate documents based on a template and a substitution mapping.
 
     Must use Python 1.5 or newer. Uses re and the get method on dictionaries.
@@ -522,22 +521,34 @@ class TemplateDocument:
     used as the delimiters instead of { } braces. They must be of the same
     length; for example ['##+', '##'] is invalid.
     """
-    def __init__(self, templatefile, substitutions={}, delimiters=["{","}"] ):
-        if len(delimiters) != 2:
+    def __init__(self, template, substitutions=None, **kw):
+        self.delimiters = ['{', '}']
+        self.__dict__.update(kw)
+        if len(self.delimiters) != 2:
             raise ValueError("delimiter argument must be a pair of strings")
-        self.delimiter_width = len(delimiters[0])
-        delimiters = map(re.escape, delimiters)
+        self.delimiter_width = len(self.delimiters[0])
+        delimiters = map(re.escape, self.delimiters)
         self.subpatstr = delimiters[0] + "[\w_]+" + delimiters[1]
         self.subpat = re.compile(self.subpatstr)
-        self.substitutions = substitutions
-        f = open(mpath(templatefile))
-        self.source = f.read()
-        f.close()
+        self.substitutions = substitutions or {}
+        self.set_template(template)
+
+    def set_template(self, template):
+        self.source = template
+    
+    def keys(self):
+        return self.substitutions.keys()
+
+    def __setitem__(self, name, value):
+        self.substitutions[name] = value
+        
+    def __getitem__(self, name):
+        return self.substitutions[name]
       
     def __str__(self):
-        return self.sub(self.source)
+        return self._sub(self.source)
 
-    def sub(self, source, subs=None):
+    def _sub(self, source, subs=None):
         """Perform source text substitutions.
 
         *source* string containing template source text
@@ -552,7 +563,8 @@ class TemplateDocument:
             a, b = matched.span()
             output.append(source[i:i+a])
             # using the new get method for dicts in 1.5
-            output.append(str(substitutions.get(source[i+a+dw:i+b-dw], source[i+a:i+b])))
+            output.append(str(substitutions.get(
+                   source[i+a+dw:i+b-dw], source[i+a:i+b])))
             i = i + b
             matched = self.subpat.search(source[i:])
         else:
@@ -586,6 +598,200 @@ class TemplateDocument:
             import sys
             sys.stdout.write(str(self))
 
+class TemplateDocument(StringTemplate):
+    """Generate documents based on a template and a substitution mapping.
+
+    Must use Python 1.5 or newer. Uses re and the get method on dictionaries.
+
+    Usage:
+       T = TemplateDocument('Xfile')
+       T.substitutions = {'month': ObjectY, 'town': 'Scarborough'}
+       T.write('Maine.html')
+
+    A dictionary, or object that behaves like a dictionary, is assigned to the
+    *substitutions* attribute which has symbols as keys to objects. Upon every
+    occurance of these symbols surrounded by braces {} in the source template,
+    the corresponding value is converted to a string and substituted in the output.
+
+    For example, source text which looks like:
+     I lost my heart at {town} Fair.
+    becomes:
+     I lost my heart at Scarborough Fair.
+
+    Symbols in braces which do not correspond to a key in the dictionary remain
+    unchanged.
+
+    An optional third argument to the class is a list or two strings to be
+    used as the delimiters instead of { } braces. They must be of the same
+    length; for example ['##+', '##'] is invalid.
+    """
+    def set_template(self, template):
+        f = open(mpath(template))
+        self.source = f.read()
+        f.close()
+
+class AutoStringTemplate(StringTemplate):
+    marker_begin = '<!--{%s}Begin-->'
+    marker_end   = '<!--{%s}End-->'
+    R = re.compile(r"<!--{(?P<key>[\w_]+)}Begin-->(?P<text>.*?)<!--{\1}End-->", re.S)
+    
+    def set_template(self, template):
+        """Set template string and normalize by extracting comment tokens.
+        """
+        self.source = template
+        self.extract_template()
+        
+    def extract_template(self, source=None):
+        """Convert comment-marked regions to a regular {tokens}.
+        
+        Updates the substitution dictionary with the text from the region.
+        """
+        source = source or self.source
+        a = 0
+        newsubs = {}
+        newtemplate = []
+        d1, d2 = self.delimiters
+        while 1:
+            m = self.R.search(source, a)
+            if m:
+                start, end = m.span()
+                newtemplate.append(source[a:start])
+                a = end
+                newsubs[m.group('key')] = m.group('text')
+                newtemplate.append(d1+m.group('key')+d2)
+            else:
+                newtemplate.append(source[a:])
+                break
+        self.source = string.join(newtemplate, '')
+        self.substitutions.update(newsubs)
+
+    def _sub(self, source, subs=None):
+        """Perform source text substitutions.
+
+        *source* string containing template source text
+        *subs* mapping of symbols to replacement values
+        """
+        substitutions = subs or self.substitutions
+        dw = self.delimiter_width
+        i = 0
+        output = []
+        matched = self.subpat.search(source[i:])
+        while matched:
+            a, b = matched.span()
+            output.append(source[i:i+a])
+            #implant comments to mark the location of the tokens
+            output.append(self.marker_begin % source[i+a+dw:i+b-dw])
+            # using the new get method for dicts in 1.5
+            output.append(str(substitutions.get(
+                   source[i+a+dw:i+b-dw], source[i+a:i+b])))
+            output.append(self.marker_end % source[i+a+dw:i+b-dw])
+            i = i + b
+            matched = self.subpat.search(source[i:])
+        else:
+            output.append(source[i:])
+        return string.join(output, '')
+
+class AutoTemplateDocument(AutoStringTemplate):
+    """Generate documents based on a template and a substitution mapping.
+    
+    The primary difference between AutoTemplateDocument and TemplateDocument
+    is that the Auto version can read through an HTML file previously
+    generated with this class and identify the regions of text that were
+    substituted. It then extracts that text into the substitution dictionary
+    and can then be updated. The intent is to eliminate the need to 
+    maintain separate content files for insertion into templates. The HTML
+    output file can double as a template for future use.
+    Output from this class have their filled regions marked by comments:
+        ...gets <!--{wz}Begin-->glued,<!--{wz}End--> in place...
+    Which came from ...gets {wz} in place... in old style template syntax.
+    
+    AutoTemplateDocument is a functional superset of TemplateDocument and should
+    be compatible.
+
+    Usage:
+       T = AutoTemplateDocument('Maine.html')
+       T.substitutions = {'month': ObjectY, 'town': 'Scarborough'}
+       or
+       T['month'] = ObjectY ; T['town'] = 'Scarborough'
+       T.write('Maine.html')
+    
+    A dictionary, or object that behaves like a dictionary, is assigned to the
+    *substitutions* attribute which has symbols as keys to objects. Upon every
+    occurance of these symbols surrounded by braces {} in the source template,
+    the corresponding value is converted to a string and substituted in the output.
+
+    For example, source text which looks like:
+     I lost my heart at {town} Fair.
+    becomes:
+     I lost my heart at Scarborough Fair.
+
+    Symbols in braces which do not correspond to a key in the dictionary remain
+    unchanged.
+
+    An optional third argument to the class is a list or two strings to be
+    used as the delimiters instead of { } braces. They must be of the same
+    length; for example ['##+', '##'] is invalid.
+    """
+    def set_template(self, template):
+        f = open(mpath(template))
+        self.source = f.read()
+        f.close()
+
+
+class Container:
+    """A holder for a list of HTMLgen objects.    
+    """
+
+    def __init__(self, *args, **kw):
+        self.contents = list(args)
+        for name, value in kw.items():
+            setattr(self, name, value)
+
+    def __str__(self):
+        bodystring = '%s\n' * len(self.contents)
+        return bodystring % tuple(self.contents)
+
+    def __add__(self, other):
+        new = self.__class__()
+        new.contents = self.contents + other.contents
+        return new
+        
+    def append_file(self, filename, marker_function = None):
+        """Add the contents of a file to the document.
+
+        filename -- the filename of the file to be read [string]
+        marker_function -- a callable object which the text read from
+          the file will be passed through before being added to the
+          document.
+        """
+        f = open(mpath(filename), 'r')
+        if marker_function:
+            self.append(marker_function(f.read()))
+        else:
+            self.append(f.read())
+        f.close()
+        
+    def append(self, *items):
+        """Add content to the Document object.
+        
+        Arg *items* can be plain text or objects; multiple arguments supported.
+        """
+        for item in items:
+            self.contents.append(item)
+
+    def prepend(self, *items):
+        """Add content to the beginning of the Document object.
+        
+        Arg *items* can be plain text or objects; multiple arguments supported.
+        """
+        li = len(items)
+        for i in range(li-1, 0, -1):
+            self.contents.insert(0, items[i])
+
+    def copy(self):
+        """Return a complete copy of the current Container object.
+        """
+        return copy.deepcopy(self)
 
 #===================
         
@@ -877,7 +1083,7 @@ class List(UserList.UserList):
 
         Overloaded by child classes to represent other list styles.
         """
-        return '%s<LI>%s\n' % (self.pad*self.lvl, item)
+        return '%s<LI>%s</LI>\n' % (self.pad*self.lvl, item)
 
     def start_element(self):
         """Generic creator for the HTML element opening tag.
@@ -986,7 +1192,6 @@ class NonBulletList(List):
 
 
 ####### FORM TAGS ########
-
 class Form:
     """Define a user filled form. Uses POST method.
    
@@ -997,11 +1202,10 @@ class Form:
     
         name -- name of the form
         submit -- The Input object to be used as the submit button.
-                  If None (default) a Submit button will automatically
+                  If none specified a Submit button will automatically
                   be appended to the form. Do not manually append your
                   submit button. HTMLgen will append it for you.
-        reset  -- flag indicating if a Reset button should automatically
-                  be appended to the form.
+        reset  -- Input object to be used as a reset button.
         target -- set a TARGET attribute
         enctype -- specify an Encoding type.
         onSubmit -- script, which is executed, when the form is submitted
@@ -1009,32 +1213,21 @@ class Form:
     def __init__(self, cgi = None, **kw):
         self.contents = []
         self.cgi = cgi
-        self.submit = None
+        self.submit = Input(type='submit', name='SubmitButton', value='Send')
         self.reset = None
         self.target = None
         self.enctype = None
         self.name = None
         self.onSubmit = ''
-        for item in kw.keys():
-            if self.__dict__.has_key(item):
-                self.__dict__[item] = kw[item]
-            else:
-                raise KeyError, `item`+' not a valid parameter of the Form class.'
+        overlay_values(self, kw)
 
     def append(self, *items):
         """Append any number of items to the form container.
         """
         for item in items:
-            self.contents.append(item)
+            self.contents.append(str(item))
 
     def __str__(self):
-        if not self.submit:
-            self.contents.append(Input(type='submit', name='SubmitButton',value='Send'))
-        else:
-            self.contents.append(self.submit)
-        if self.reset:
-            self.contents.append(self.reset)
-
         s = ['\n<FORM METHOD="POST"']
         if self.cgi: s.append(' ACTION="%s"' % self.cgi)
         if self.enctype: s.append(' ENCTYPE="%s"' % self.enctype)
@@ -1042,10 +1235,24 @@ class Form:
         if self.name: s.append(' NAME="%s"' % self.name)
         if self.onSubmit: s.append(' onSubmit="%s"' % self.onSubmit)
         s.append('>\n')
-        for item in self.contents:
-            s.append(str(item))
+        s = s + self.contents
+        s.append(str(self.submit))
+        if self.reset: s.append(str(self.reset))
         s.append('\n</FORM>\n')
         return string.join(s, '')
+        
+        
+def overlay_values(obj, dict):
+    """Adds each item from dict to the given object iff there already
+    exists such a key. Raises KeyError if you try to update the value
+    of non-existing keys.
+    """
+    for key in dict.keys():
+        if hasattr(obj, key):
+            obj.__dict__[key] = dict[key]
+        else:
+            raise KeyError(`key` + ' not a keyword for ' + obj.__class__.__name__)
+
 
 class Input:
     """General Form Input tags.
@@ -1074,8 +1281,8 @@ class Input:
         onSelect -- script, which is executed, when part of the field 
                     is selected, useful for the text-type
     """
-    re_type = regex.compile('text\|password\|checkbox\|radio\|image\|button\|file\|submit\|reset\|hidden',
-                            regex.casefold)
+    re_type = re.compile('text|password|checkbox|radio|image|button|file|submit|reset|hidden',
+                            re.IGNORECASE)
     def __init__(self, **kw):
         self.type = 'TEXT'
         self.name = 'Default_Name'
@@ -1097,7 +1304,7 @@ class Input:
                 self.__dict__[item] = kw[item]
             else:
                 raise KeyError, `item`+' not a valid parameter of the Input class.'
-        if Input.re_type.search(self.type) < 0:
+        if Input.re_type.search(self.type) is None:
             raise KeyError, `self.type`+' not a valid type of Input class.'
 
     def __str__(self):
@@ -1350,7 +1557,7 @@ class Table:
                 if type(self.body[i][j]) == StringType:
                     #process cell contents to insert breaks for \n char.
                     if self.cell_line_breaks:
-                        self.body[i][j] = regsub.gsub('\n','<br>', self.body[i][j])
+                        self.body[i][j] = string.replace(self.body[i][j], '\n','<br>')
                     else:
                         self.body[i][j] = Text(self.body[i][j])
 
@@ -1697,8 +1904,8 @@ class AbstractTag:
         return copy.deepcopy(self)
 
     def markup(self, rex=None, marker=None, **kw):
-        """Markup the contained text with a given regex with
-        a given tag class instance or function.
+        """Markup the contained text matching a regular expression with
+        a tag class instance or function. 
 
         Arguments
 
@@ -1713,27 +1920,20 @@ class AbstractTag:
         
             collapse -- When set to 1 removes the non-grouped matching text
                 from the output. Default 0.
-            reg_type -- Either 'regex' or 're' to specify which regular expression
-                module to use. Defaults to 'regex'.
 
         Returns the number of matching text groups.
         """
         collapse = 0
-        reg_type = 'regex'
         if kw.has_key('collapse'): collapse = kw['collapse']
-        if kw.has_key('reg_type'): reg_type = kw['reg_type']
         text = string.join(map(str, self.contents))
-        if reg_type == 're':
-            newtext, count = markup_re(text, rex, marker, collapse)
-        elif reg_type == 'regex':
-            newtext, count = markup_regex(text, rex, marker, collapse)
+        newtext, count = markup_re(text, rex, marker, collapse)
         if count:
             self.contents = [newtext]
             self.html_escape = 'OFF'
         return count
 
 
-class Area(AbstractTag):
+class Area(AbstractTagSingle):
     """Specify a click-sensitive area of an image.
 
     The area is linked to a HREF specified by the *href* attribute.
@@ -2179,88 +2379,18 @@ class Comment:
         return self.__str__()
 
 ###### UTILITIES USED INTERNALLY ########
-try:
-    #test for new feature in 1.5+
-    from string import replace
-    def escape(text):
-        """Converts the special characters '<', '>', and '&'.
 
-        RFC 1866 specifies that these characters be represented
-        in HTML as &lt; &gt; and &amp; respectively. In Python
-        1.5 we use the new string.replace() function for speed.
-        """
-        # New in 1.5 (~3 times faster)
-        text = replace(text, '&', '&amp;') # must be done 1st
-        text = replace(text, '<', '&lt;')
-        text = replace(text, '>', '&gt;')
-        return text
-    
-except ImportError:
-    def escape(text):
-        """Converts the special characters '<', '>', and '&'.
+def escape(text, replace=string.replace):
+    """Converts the special characters '<', '>', and '&'.
 
-        RFC 1866 specifies that these characters be represented
-        in HTML as &lt; &gt; and &amp; respectively.
-        """
-        # Using this join/split technique is faster than regsub
-        # for strings with few occurances. Otherwise it's a wash.
-        # Old technique for 1.4-  
-        split = string.split
-        join  = string.join
-        text = join(split(text, '&'), '&amp;') # must be done 1st
-        text = join(split(text, '<'), '&lt;')
-        text = join(split(text, '>'), '&gt;')
-        return text
-
-def markup_regex(text, rex=None, marker=None, collapse=0):
-    """Markup the contained text with a given regex with
-    a given tag class instance. Uses regex module.
-
-    Arguments
-
-        text -- string to act on
-        rex -- a regular expression object or pattern which will be used
-            to match all text patterns in the Paragraph body. Must have a single
-            group defined. Group 1 is the matching text that will be marked.
-            Default to all parenthetical text.
-        marker -- an HTMLgen class instance (or any function) to which the found text will
-            be sent for wrapping (using its __call__ method). Default is Emphasis.
-            Can be your function as well.
-        collapse -- Optional flag. When set to 1 removes the non-
-            grouped matching text from the output. Default 0.
-
-    Returns the marked text and the number of matching text groups.
+    RFC 1866 specifies that these characters be represented
+    in HTML as &lt; &gt; and &amp; respectively. In Python
+    1.5 we use the new string.replace() function for speed.
     """
-    if rex is None: rex = regex.compile('(\([^)]*\))')
-    if marker is None: marker = Emphasis()
-    if type(rex) == StringType: rex = regex.compile(rex)
-    endpoints = []
-    output = []
-    i = 0
-    count = 0
-    while 1:
-        # build up a list of tuples: ( 'u'|'m', begin, end ) 
-        # 'u' indicates unmarked text and 'm' marked text
-        # begin and end is the range of characters
-        if rex.search(text, i) > -1:
-            if collapse: #skip chars outside group1
-                endpoints.append( ('u', i, rex.regs[0][0]) )
-                i = rex.regs[0][1]
-            else: #incl chars outside group1
-                endpoints.append( ('u', i, rex.regs[1][0]) )
-                i = rex.regs[1][1]
-            endpoints.append( ('m', rex.regs[1][0], rex.regs[1][1]) ) #text2Bmarked
-            count = count + 1
-        else:
-            endpoints.append( ('u', i, len(text) ) ) # tack on an ending slice
-            break
-    if count == 0: return text, 0  # didn't find any matches
-    for (style, begin, end) in endpoints:
-        if style == 'm':
-            output.append(marker(text[begin:end]))
-        else:
-            output.append(text[begin:end])
-    return string.join(output, ''), count
+    text = replace(text, '&', '&amp;') # must be done 1st
+    text = replace(text, '<', '&lt;')
+    text = replace(text, '>', '&gt;')
+    return text
 
 def markup_re(text, rex=None, marker=None, collapse=0):
     """Markup the contained text with a given re pattern/object with
@@ -2281,11 +2411,6 @@ def markup_re(text, rex=None, marker=None, collapse=0):
 
     Returns tuple pair of the marked text and the number of matching text groups.
     """
-    try:
-        import re
-    except ImportError:
-        print 'Module "re" unavailable.'
-        return text, 0
     if rex is None: rex = re.compile('\(([^)]*)\)')
     if marker is None: marker = Emphasis()
     if type(rex) == StringType: rex = re.compile(rex)
@@ -2331,18 +2456,15 @@ class URL:
     be altered individually after instantiation. The __str__ method
     simply reassembles the components into a full URL string.
     """
-    pattern = regex.compile('^\([a-z]+\)://\([^/ ]*\)\([^ ]*\)$',regex.casefold)
-    def __init__(self, url=''):
-        self.proto = ''
-        self.node = ''
-        self.dir = ''
-        self.file = ''
-        if not url: return
-        if self.pattern.search(url) > -1:
-            self.proto, self.node, path = self.pattern.group(1,2,3)
-            self.dir, self.file = self.split(path)
-        else:
-            print 'Invalid URL: '+ url
+    def __init__(self, url):
+        self.url = url
+        self.parse(url)
+    def parse(self, url):
+        import urlparse
+        self.unparse = urlparse.urlunparse
+        self.proto, self.node, self.path, self.params, self.query, self.fragment = \
+                    urlparse.urlparse(url)
+        self.dir, self.file = self.split(self.path)
 
     def split(self, p):
         """Same as posixpath.split()
@@ -2357,7 +2479,11 @@ class URL:
         return head, tail
 
     def __str__(self):
-        return '%s://%s%s/%s' % (self.proto, self.node, self.dir, self.file)
+        return self.unparse( (self.proto,
+                              self.node,
+                              self.dir+self.file,
+                              self.params,
+                              self.query, self.fragment) )
 
     def copy(self):
         """No argument. Return a copy of this object.

@@ -14,8 +14,12 @@
 #
 # See the README file for information on usage and redistribution.
 #
-
-import array
+try:
+    import array
+    jpython = 0
+except ImportError:
+    import jarray
+    jpython = 1
 import ImageH
 
 class ImagePalette:
@@ -28,7 +32,11 @@ class ImagePalette:
 	    raise ValueError, "wrong palette size"
 
     def tostring(self):
-        return array.array("b", self.palette).tostring()
+        if jpython == 0:
+            return array.array("b", self.palette).tostring()
+        else:
+            return jarray.array(self.palette, "b").tostring()
+
 
     def save(self, fp):
         if type(fp) == type(""):
@@ -62,7 +70,7 @@ def negative(mode = "RGB"):
     return ImagePalette(mode, palette * len(mode))
 
 def random(mode = "RGB"):
-    from whrandom import randint
+#    from whrandom import randint
     palette = map(lambda a: randint(0, 255), [0]*256*len(mode))
     return ImagePalette(mode, palette)
 

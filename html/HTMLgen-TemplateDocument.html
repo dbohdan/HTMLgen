@@ -3,7 +3,7 @@
 
 <!-- This file generated using Python HTMLgen module. -->
 <HEAD>
-  <META NAME="GENERATOR" CONTENT="HTMLgen 2.1">
+  <META NAME="GENERATOR" CONTENT="HTMLgen 2.2.2">
         <TITLE>Class TemplateDocument - Generate documents based on a template and a substitution mapping.</TITLE>
 
  <LINK rel=stylesheet href="HTMLgen.css" type=text/css title="HTMLgen.css">
@@ -12,7 +12,7 @@
 <A HREF="HTMLgen-TableLite.html"><IMG src="../image/back.gif" height="22" width="66" alt="Previous" border="0"></A> 
 <A HREF="HTMLgen-Text.html"><IMG src="../image/next.gif" height="22" width="66" alt="Next" border="0"></A> 
 <IMG src="../image/blank.gif" height="22" width="66" alt="blank.gif"> 
-<A HREF="index.html"><IMG src="../image/home.gif" height="22" width="66" alt="Home Page" border="0"></A> 
+<IMG src="../image/blank.gif" height="22" width="66" alt="blank.gif"> 
 <H3>Class TemplateDocument - Generate documents based on a template and a substitution mapping.</H3>
 <HR>
 
@@ -20,11 +20,16 @@
 
 <PRE>import HTMLgen</PRE>
 
-<PRE>class TemplateDocument
-  def __init__(self, templatefile, substitutions={})
+<PRE>class TemplateDocument(StringTemplate)
   string __module__ = 'HTMLgen'
+  def set_template(self, template)
+
+  # Methods inherited by TemplateDocument from StringTemplate
+  def __getitem__(self, name)
+  def __init__(self, template, substitutions=None, **kw)
+  def __setitem__(self, name, value)
   def __str__(self)
-  <A HREF="#def sub(self, source, subs=None)">def sub(self, source, subs=None)</A>
+  def keys(self)
   <A HREF="#def write(self, filename = None)">def write(self, filename = None)</A>
 </PRE>
 
@@ -54,17 +59,13 @@ becomes:
 
 
 <P>Symbols in braces which do not correspond to a key in the dictionary remain
-unchanged.
-</P>
-
-<H3><A NAME="def sub(self, source, subs=None)">def sub(self, source, subs=None)</A></H3>
+unchanged.</P>
 
 
-<P>Perform source text substitutions.</P>
-
-
-<P>*source* string containing template source text
-<EM>subs</EM> mapping of symbols to replacement values
+<P>An optional third argument to the class is a list or two strings to be
+used as the delimiters instead of { } braces. They must be of the same
+length; for example "<CODE>##+</CODE>
+, '##'" is invalid.
 </P>
 
 <H3><A NAME="def write(self, filename = None)">def write(self, filename = None)</A></H3>
@@ -84,15 +85,18 @@ Will print to stdout if no argument given.
 <P><A HREF="HTMLgen_overview.html">HTMLgen</A></P>
 
 
+<P><A HREF="HTMLgen-StringTemplate.html">StringTemplate</A></P>
+
+
 <P><HR>
 <A HREF="HTMLgen-TableLite.html"><IMG src="../image/back.gif" height="22" width="66" alt="Previous" border="0"></A> 
 <A HREF="HTMLgen-Text.html"><IMG src="../image/next.gif" height="22" width="66" alt="Next" border="0"></A> 
 <IMG src="../image/blank.gif" height="22" width="66" alt="blank.gif"> 
-<A HREF="index.html"><IMG src="../image/home.gif" height="22" width="66" alt="Home Page" border="0"></A> 
+<IMG src="../image/blank.gif" height="22" width="66" alt="blank.gif"> 
 <BR><IMG src="../image/Buzz.gif" height="51" width="56" alt="Buzz.gif" align="bottom">
 <FONT SIZE="-1"><P>Copyright &#169 Robin Friedrich<BR>All Rights Reserved<BR>
 
-Comments to author: <A HREF="mailto:&#102;ri&#101;dr&#105;ch&#64;py&#116;ho&#110;pr&#111;s.&#99;om">friedrich@pythonpros.com</A><br>
-Generated: Sun Jun 14 1998 <BR><hr>
+Comments to author: <A HREF="mailto:&#102;rie&#100;ric&#104;@py&#116;hon&#112;ros&#46;com">friedrich@pythonpros.com</A><br>
+Generated: Tue Apr 20, 1999 <BR><hr>
 </FONT>
 </BODY> </HTML>

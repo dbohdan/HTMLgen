@@ -79,7 +79,7 @@ Intended to work with HTMLgen.
 from HTMLgen import *
 from types import ListType, StringType
 import UserDict
-#'$Id: StickyForm.py,v 1.2 1998/03/19 18:43:51 friedric Exp friedric $'
+#'$Id: StickyForm.py,v 1.3 1999/02/04 04:57:34 friedric Exp $'
 __version__ = '1.0.1'
 __author__  = 'Amos Latteier, amos@aracnet.com'
 

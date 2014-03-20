@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """Utility to generate a table of browser safe colors.
 """

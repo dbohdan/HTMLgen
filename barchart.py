@@ -1,11 +1,10 @@
-#!/usr/bin/env python
 
 """Provides BarChart class which creates HTML 1D bar charts,
 and StackedBarChart class to deal with multiple data plotting
 for web pages. Only works for positive data values.
 Also provides a DataList class to support the data handling needed.
 """
-__version__ = '$Id: barchart.py,v 2.0 1998/03/19 18:55:51 friedric Exp $'
+__version__ = '$Id: barchart.py,v 2.1 1999/03/17 03:13:39 friedric Exp $'
 __author__ = 'Robin Friedrich'
 __date__ = 'June 30, 1997'
 # barchart.py
@@ -329,7 +328,10 @@ class DataList(UserList.UserList):
     def mean(self, key='value'):
         """return mean (average) of values in column key
         """
-        return self.sum(key) / len(self)
+        if len(self) > 0:
+            return self.sum(key) / len(self)
+        else:
+            return 0.0
     
     def sum_totals(self):
         """add new key 'total' to each dictionary
